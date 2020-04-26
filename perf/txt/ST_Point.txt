@@ -1,0 +1,6 @@
+geospark_ST_Point_time:39.868
+geospark_ST_Point_time:23.209
+geospark_ST_Point_time:22.959
+geospark_ST_Point_time:22.967
+geospark_ST_Point_time:22.841
+geospark_ST_Point_time:22.606
