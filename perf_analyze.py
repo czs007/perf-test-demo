@@ -205,6 +205,9 @@ def figure_intersection3(res_set, geospark_funcs, geomesa_funcs,arctern_funcs):
 
     return intersection_funcs, [geospark_res, geomesa_res,arctern_res], geospark_remove, geomesa_remove, arctern_remove
 
+def re_order(standard_order_arr,index_arr,value_arr):
+    for item in standard_order_arr:
+        yield dict(zip(index_arr,value_arr))[item]
 
 geospark_log_dir = '/home/czp/performance/geospark_log/10_7/'
 geomesa_log_dir = '/home/czp/performance/geomesa_log/10_7/'
@@ -230,7 +233,6 @@ if __name__ == "__main__":
             sys.exit()
         elif opt in ("-a", "--geospark_dir"):
             geospark_log_dir = arg
-            print(geospark_log_dir)
         elif opt in ("-b", "--geomesa_dir"):
             geomesa_log_dir = arg
         elif opt in ("-c", "--arctern_dir"):
@@ -295,9 +297,26 @@ if __name__ == "__main__":
 #    intersection_funcs, intersection_res_set , geospark_remove, geomesa_remove = figure_intersection2(res_set, geospark_func_order, geomesa_func_order)
     intersection_funcs, intersection_res_set , geospark_remove, geomesa_remove,arctern_remove = figure_intersection3(res_set, geospark_func_order, geomesa_func_order,arctern_func_order)
 #    plot_histogram2(intersection_funcs,intersection_res_set,png_name,fig_title)
+    geospark_func_order = [x for x in geospark_func_order if x in intersection_funcs]
+    geomesa_func_order = [x for x in geomesa_func_order if x in intersection_funcs]
+    arctern_func_order = [x for x in arctern_func_order if x in intersection_funcs]
+
+    intersection_res_set[0] = list(re_order(intersection_funcs,geospark_func_order,intersection_res_set[0]))
+    intersection_res_set[1] = list(re_order(intersection_funcs, geomesa_func_order, intersection_res_set[1]))
+    intersection_res_set[2] = list(re_order(intersection_funcs, arctern_func_order, intersection_res_set[2]))
+
     plot_histogram3(intersection_funcs, intersection_res_set, png_name, fig_title)
+    print(geomesa_log_dir[-5:-1])
+    print()
     print('geospark remove funcs:' + str(geospark_remove))
+    print()
     print('geomesa remove funcs:' + str(geomesa_remove))
+    print()
     print('arctern remove funcs:' + str(arctern_remove))
     print()
+    print('--------------------------------------------------------------------------------------------------')
+    print()
+
+
+
 
