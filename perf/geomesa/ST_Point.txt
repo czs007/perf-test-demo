@@ -1,0 +1,6 @@
+geomesa_ST_Point_time:29.868
+geomesa_ST_Point_time:13.209
+geomesa_ST_Point_time:12.959
+geomesa_ST_Point_time:12.967
+geomesa_ST_Point_time:12.841
+geomesa_ST_Point_time:12.606
