@@ -1,7 +1,0 @@
-geomesa_ST_IsValid_time:52.355
-geomesa_ST_IsValid_time:31.655
-geomesa_ST_IsValid_time:31.754
-geomesa_ST_IsValid_time:34.91
-geomesa_ST_IsValid_time:31.487
-geomesa_ST_IsValid_time:32.083
-

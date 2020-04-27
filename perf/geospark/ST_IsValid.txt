@@ -1,7 +1,0 @@
-geospark_ST_IsValid_time:62.355
-geospark_ST_IsValid_time:41.655
-geospark_ST_IsValid_time:41.754
-geospark_ST_IsValid_time:44.91
-geospark_ST_IsValid_time:41.487
-geospark_ST_IsValid_time:42.083
-
