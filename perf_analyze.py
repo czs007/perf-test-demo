@@ -15,6 +15,7 @@ def fetch_log_files(dir):
 
 def fetch_func_perf(log_files):
     # declare var res_arrs based on func_name
+    import re
     res = []
     append_order_arr = []
     for func_name in list(map(lambda x: x[0:-4], log_files[1])):
@@ -23,11 +24,13 @@ def fetch_func_perf(log_files):
         tmp_arr = []
         with open(log_files[0] + log_file, 'r') as f:
             for line in f:
-                line = list(map(lambda x: x.upper(), line.split(':')))
+                #line = list(map(lambda x: x.upper(), line.split(':')))
+                line = list(map(lambda x: x.upper(), re.split('[: ]',line)))
                 parser_key1 = ('geospark_' + log_file[0:-4] + '_time').upper()
                 parser_key2 = ('geomesa_' + log_file[0:-4] + '_time').upper()
                 parser_key3 = ('arctern_' + log_file[0:-4] + '_time').upper()
-                if parser_key1 in line or parser_key2 in line or parser_key3 in line:
+                parser_key4 = (log_file[0:-4]).upper()
+                if parser_key1 in line or parser_key2 in line or parser_key3 in line or parser_key4 in line:
                     tmp_arr.append(float(line[-1]))
         append_order_arr.append(log_file[0:-4])
         res.append(tmp_arr)
@@ -79,7 +82,7 @@ def plot_line_chart(func_name, res_func_arr):
     plt.close('all')
     # print('plot %s performance analysis picture success.'%func_name)
 
-def plot_histogram(func_order_list,res_set,file_name,fig_name):
+def plot_histogram2(func_order_list,res_set,file_name,fig_name):
     histogram_file = plot_dir + file_name + '.png'
     fig_title = fig_name
 
@@ -103,8 +106,38 @@ def plot_histogram(func_order_list,res_set,file_name,fig_name):
     plt.savefig(histogram_file)
     plt.close('all')
 
+def plot_histogram3(func_order_list,res_set,file_name,fig_name):
+    histogram_file = plot_dir + file_name + '.png'
+    fig_title = fig_name
 
-def figure_intersection(res_set, geospark_funcs, geomesa_funcs):
+    geospark_res = res_set[0]
+    geomesa_res = res_set[1]
+    arctern_res = res_set[2]
+    assert len(geospark_res) == len(geomesa_res)
+    assert len(geospark_res) == len(arctern_res)
+
+    x = list(range(len(geospark_res)))
+    total_width, n = 0.9, 3
+    width = total_width / n
+    plt.figure(figsize=(36, 4))  # picture size
+    plt.title(fig_title)
+    plt.xlabel("Functions")  # X label
+    plt.ylabel("Cost /ms")  # Y label
+    plt.bar(x, geospark_res, width=width, label='geospark', color=(0.2, 0.4, 0.6, 0.6))
+    for i in range(len(x)):
+        x[i] = x[i] + width
+    plt.bar(x, geomesa_res, width=width, label='geomesa',color=(0.2, 0.4, 0.5, 0.5))
+    for i in range(len(x)):
+        x[i] = x[i] + width
+    plt.bar(x, arctern_res, width=width, label='arctern', color=(0.2, 0.4, 0.4, 0.4))
+
+    plt.legend()
+    plt.xticks(list(map(lambda x:x-width,x)), func_order_list)
+    # plt.show()
+    plt.savefig(histogram_file)
+    plt.close('all')
+
+def figure_intersection2(res_set, geospark_funcs, geomesa_funcs):
     intersection_funcs = [i for i in geospark_funcs if i in geomesa_funcs]
     geospark_res = res_set[0]
     geomesa_res = res_set[1]
@@ -133,12 +166,51 @@ def figure_intersection(res_set, geospark_funcs, geomesa_funcs):
 
     return intersection_funcs, [geospark_res, geomesa_res], geospark_remove, geomesa_remove
 
-geospark_log_dir = '/home/czp/workspace/perf/log/logWkb/log1000m/'
-geomesa_log_dir = '/home/czp/geomesa_report2/10_9/'
-arctern_log_dir = 'perf/arctern/'
+def figure_intersection3(res_set, geospark_funcs, geomesa_funcs,arctern_funcs):
+    intersection_funcs = [i for i in geospark_funcs if i in geomesa_funcs and i in arctern_funcs]
+    geospark_res = res_set[0]
+    geomesa_res = res_set[1]
+    arctern_res = res_set[2]
+    geospark_remove = []
+    geomesa_remove = []
+    arctern_remove = []
+
+    assert len(geospark_funcs) == len(res_set[0])
+    assert len(geomesa_funcs) == len(res_set[1])
+    assert len(arctern_funcs) == len(res_set[2])
+
+    delete_index = []
+    for i in range(0, len(geospark_funcs)):
+        if geospark_funcs[i] not in intersection_funcs or geospark_res[i] == -1:
+            delete_index.append(i)
+            geospark_remove.append(geospark_funcs[i])
+    for i in delete_index[::-1]:
+        del geospark_res[i]
+
+    delete_index = []
+    for i in range(0, len(geomesa_funcs)):
+        if geomesa_funcs[i] not in intersection_funcs or geomesa_res[i] == -1:
+            delete_index.append(i)
+            geomesa_remove.append(geomesa_funcs[i])
+    for i in delete_index[::-1]:
+        del geomesa_res[i]
+
+    delete_index = []
+    for i in range(0, len(arctern_funcs)):
+        if arctern_funcs[i] not in intersection_funcs or arctern_res[i] == -1:
+            delete_index.append(i)
+            arctern_remove.append(arctern_funcs[i])
+    for i in delete_index[::-1]:
+        del arctern_res[i]
+
+    return intersection_funcs, [geospark_res, geomesa_res,arctern_res], geospark_remove, geomesa_remove, arctern_remove
+
+geospark_log_dir = '/home/czp/performance/geospark_log/10_7/'
+geomesa_log_dir = '/home/czp/performance/geomesa_log/10_7/'
+arctern_log_dir = '/home/czp/performance/arctern_log/10_7/'
 plot_dir = 'perf/pic/'
-fig_title = 'wkb 1000m'
-png_name = 'perf_analysis'
+fig_title = 'wkb 10_7 fig'
+png_name = 'wkb7'
 
 # Performance analysis standard deviation accuracy tolerance
 std_threshold = 3.0
@@ -175,12 +247,31 @@ if __name__ == "__main__":
         else :
             geomesa_funcs_means_arr.append(-1)  # place holder data, this item will be delete in figure_intersection
 
+    # res_set is a list that contains historical performance data for all gis functions
+    arctern_res_set, arctern_func_order = fetch_func_perf(fetch_log_files(arctern_log_dir))
+    arctern_func_order = [x.lower() for x in arctern_func_order if isinstance(x, str)]
+    assert len(arctern_func_order) == len(arctern_res_set)
+    arctern_funcs_means_arr = []
+    # produce specific result variable in main for every functions in func_order
+    for i in range(0, len(arctern_func_order)):
+        func_name = arctern_func_order[i]
+        exec('res_{}_arctern={}'.format(func_name, arctern_res_set[i][1:]))  # ignore first item
+        cur_res = (locals()['res_' + func_name + '_arctern'])
+        if cur_res:
+            arctern_funcs_means_arr.append(numpy.mean(cur_res))
+        else:
+            arctern_funcs_means_arr.append(-1)  # place holder data, this item will be delete in figure_intersection
+
     res_set = []
     res_set.append(geospark_funcs_means_arr)
     res_set.append(geomesa_funcs_means_arr)
-    intersection_funcs, intersection_res_set , geospark_remove, geomesa_remove = figure_intersection(res_set, geospark_func_order, geomesa_func_order)
-    plot_histogram(intersection_funcs,intersection_res_set,png_name,fig_title)
+    res_set.append(arctern_funcs_means_arr)
+#    intersection_funcs, intersection_res_set , geospark_remove, geomesa_remove = figure_intersection2(res_set, geospark_func_order, geomesa_func_order)
+    intersection_funcs, intersection_res_set , geospark_remove, geomesa_remove,arctern_remove = figure_intersection3(res_set, geospark_func_order, geomesa_func_order,arctern_func_order)
+#    plot_histogram2(intersection_funcs,intersection_res_set,png_name,fig_title)
+    plot_histogram3(intersection_funcs, intersection_res_set, png_name, fig_title)
     print('geospark remove funcs:' + str(geospark_remove))
     print('geomesa remove funcs:' + str(geomesa_remove))
+    print('arctern remove funcs:' + str(arctern_remove))
 
 
