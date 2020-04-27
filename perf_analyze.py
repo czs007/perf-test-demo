@@ -107,7 +107,7 @@ def plot_histogram2(func_order_list,res_set,file_name,fig_name):
     plt.close('all')
 
 def plot_histogram3(func_order_list,res_set,file_name,fig_name):
-    histogram_file = plot_dir + file_name + '.png'
+    histogram_file = plot_dir + '/'+file_name + '.png'
     fig_title = fig_name
 
     geospark_res = res_set[0]
@@ -205,18 +205,44 @@ def figure_intersection3(res_set, geospark_funcs, geomesa_funcs,arctern_funcs):
 
     return intersection_funcs, [geospark_res, geomesa_res,arctern_res], geospark_remove, geomesa_remove, arctern_remove
 
+
 geospark_log_dir = '/home/czp/performance/geospark_log/10_7/'
 geomesa_log_dir = '/home/czp/performance/geomesa_log/10_7/'
 arctern_log_dir = '/home/czp/performance/arctern_log/10_7/'
 plot_dir = 'perf/pic/'
-fig_title = 'wkb 10_7 fig'
-png_name = 'wkb7'
+fig_title = 'performance analysis fig'
+png_name = 'perf'
 
 # Performance analysis standard deviation accuracy tolerance
 std_threshold = 3.0
 
-# main invocation
 if __name__ == "__main__":
+    import sys
+    import getopt
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "-a:-b:-c:-p:-t:-n:-h",['geospark_dir','geomesa_dir','arctern_dir','plot_dir','fig_title','png_name','help'])
+    except getopt.GetoptError:
+        print('perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -p <plot_dir> -t <fig_title> -n <png_name>')
+        sys.exit(2)
+    for opt, arg in opts:
+        if opt == '-h':
+            print('perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -p <plot_dir> -t <fig_title> -n <png_name>')
+            sys.exit()
+        elif opt in ("-a", "--geospark_dir"):
+            geospark_log_dir = arg
+            print(geospark_log_dir)
+        elif opt in ("-b", "--geomesa_dir"):
+            geomesa_log_dir = arg
+        elif opt in ("-c", "--arctern_dir"):
+            arctern_log_dir = arg
+        elif opt in ("-p", "--plot_dir"):
+            plot_dir = arg
+        elif opt in ("-t", "--fig_title"):
+            fig_title = arg
+        elif opt in ("-n", "--png_name"):
+            png_name = arg
+
+
     # res_set is a list that contains historical performance data for all gis functions
     geospark_res_set, geospark_func_order = fetch_func_perf(fetch_log_files(geospark_log_dir))
     geospark_func_order = [x.lower() for x in geospark_func_order if isinstance(x, str)]
