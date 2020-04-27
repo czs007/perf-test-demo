@@ -222,7 +222,7 @@ if __name__ == "__main__":
     try:
         opts, args = getopt.getopt(sys.argv[1:], "-a:-b:-c:-p:-t:-n:-h",['geospark_dir','geomesa_dir','arctern_dir','plot_dir','fig_title','png_name','help'])
     except getopt.GetoptError:
-        print('perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -p <plot_dir> -t <fig_title> -n <png_name>')
+        print('python perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -p <plot_dir> -t <fig_title> -n <png_name>')
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
