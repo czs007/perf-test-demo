@@ -299,5 +299,5 @@ if __name__ == "__main__":
     print('geospark remove funcs:' + str(geospark_remove))
     print('geomesa remove funcs:' + str(geomesa_remove))
     print('arctern remove funcs:' + str(arctern_remove))
-
+    print()
 
