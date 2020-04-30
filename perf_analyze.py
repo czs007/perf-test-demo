@@ -1,9 +1,9 @@
 
 import os
-import numpy
 
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import MultipleLocator
+import statistics
 
 ROWS = 10**6
 
@@ -61,13 +61,11 @@ def extract_perf_time(log_dir):
     func_order = [x.lower() for x in func_order if isinstance(x, str)]
 
     assert len(func_order) == len(res_set)
-    means = []
-
     result = {}
     for i in range(len(func_order)):
         func_name = func_order[i]
         nums = res_set[i][1:]
-        mean = numpy.mean(nums)
+        mean = statistics.mean(nums)
         result[func_name] = mean
 
     return result
@@ -107,7 +105,6 @@ def plot_histogram(plot_data, file_name,fig_name):
             x[j] = x[j] + width
 
     middle_x = list(range(len(func_list)))
-    from math import ceil
     offset = (len(PREFIXES) - 1) * 0.5 * width
     middle_x = [x + offset for x in middle_x]
 
@@ -157,6 +154,3 @@ if __name__ == "__main__":
 
     res = extract_common_funcs_and_times(mean_list)
     plot_histogram(res, "a", "hehe")
-
-    #print(res['st_astext'])
-    sys.exit(0)
