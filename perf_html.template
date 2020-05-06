@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>Bar Chart</title>
+	<script src="./charts/Chart.js"></script>
+	<style>
+	canvas {
+		-moz-user-select: none;
+		-webkit-user-select: none;
+		-ms-user-select: none;
+	}
+	</style>
+</head>
+
+<body>
+	<div id="container" style="width: 90%; height: 90%;">
+		<canvas id="canvas"></canvas>
+	</div>
+	<script>
+
+		var dataSetNames = REP_DATA_NAMES
+		var allStringDatasets = REP_DATASETS
+		var functionNames = REP_FUNC_NAMES
+
+		function parseStringDataset(stringDataset){
+			var data1 = stringDataset.split(',')	
+			var result = new Array();
+			for (var index = 0; index < data1.length; ++index) {
+				result.push(parseFloat(data1[index]));
+			}
+			return result;
+		}
+
+		chartColors = {
+			red: 'rgb(255, 99, 132)',
+			orange: 'rgb(255, 159, 64)',
+			yellow: 'rgb(255, 205, 86)',
+			green: 'rgb(75, 192, 192)',
+			blue: 'rgb(54, 162, 235)',
+			purple: 'rgb(153, 102, 255)',
+			grey: 'rgb(201, 203, 207)'
+		};
+
+
+		var barChartData = {
+			labels: functionNames,
+			datasets: []
+
+		};
+
+		window.onload = function() {
+			var ctx = document.getElementById('canvas').getContext('2d');
+			window.myBar = new Chart(ctx, {
+				type: 'bar',
+				data: barChartData,
+				options: {
+					responsive: true,
+					legend: {
+						position: 'top',
+					},
+					title: {
+						display: true,
+						text: 'GIS Functions Performance'
+					}
+				}
+			});
+
+		};
+
+		var colorNames = ['red','yellow','blue','green','orange','purple','grey']
+
+		function addDataset(name, dataset) {
+			var color = Chart.helpers.color;
+			var colorName = colorNames[barChartData.datasets.length % colorNames.length];
+			var dsColor = chartColors[colorName];
+			var newDataset = {
+				label: name, 
+				backgroundColor: color(dsColor).alpha(0.5).rgbString(),
+				borderColor: dsColor,
+				borderWidth: 1,
+				data: dataset
+			};
+			barChartData.datasets.push(newDataset);
+		}
+
+		for (var index = 0; index < dataSetNames.length; ++index) {
+			dataset = parseStringDataset(allStringDatasets[index])	
+			addDataset(dataSetNames[index], dataset);
+		}
+		window.myBar.update();
+
+	</script>
+</body>
+
+</html>
