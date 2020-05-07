@@ -2,7 +2,7 @@
 <html>
 
 <head>
-	<title>Bar Chart</title>
+	<title>Performance</title>
 	<script src="./charts/Chart.js"></script>
 	<style>
 	canvas {
@@ -19,7 +19,7 @@
 	</div>
 	<script>
 
-		var dataSetNames = REP_DATA_NAMES
+		var dataSetNames = REP_SET_NAMES
 		var allStringDatasets = REP_DATASETS
 		var functionNames = REP_FUNC_NAMES
 
@@ -61,7 +61,7 @@
 					},
 					title: {
 						display: true,
-						text: 'GIS Functions Performance'
+						text: 'GIS Functions Performance with dataset(ROWS)'
 					}
 				}
 			});

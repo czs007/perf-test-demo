@@ -1,0 +1,193 @@
+<!doctype html>
+<html>
+
+<head>
+	<title>GIS Functions Scaling</title>
+
+	<script src="./charts/Chart.js"></script>
+	<script src="./charts/utils.js"></script>
+
+	<style>
+		canvas{
+			-moz-user-select: none;
+			-webkit-user-select: none;
+			-ms-user-select: none;
+		}
+		.chart-container {
+			width: 500px;
+			margin-left: 40px;
+			margin-right: 40px;
+			margin-bottom: 40px;
+		}
+		.container {
+			display: flex;
+			flex-direction: row;
+			flex-wrap: wrap;
+			justify-content: center;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container"></div>
+	<script>
+		var all_colors = window.chartColors
+		var all_color_names = Object.keys(window.chartColors)
+		var nodes = [2, 4, 8]
+		var str_datasets = ["1,2,3:4,5,6:7,8,9:10,11,12:13,14,15", "1,2,3:4,5,6:7,8,9:10,11,12:13,14,15","1,2,3:4,5,6:7,8,9:10,11,12:13,14,15","1,2,3:4,5,6:7,8,9:10,11,12:13,14,15","1,2,3:4,5,6:7,8,9:10,11,12:13,14,15", ]
+		var set_names = ["10_5", "10_6", "10_7", "10_8", "10_9"]
+		var func_names = ["st_point", "st_area", "st_crosses", "st_distance", "st_within"]
+		var value_mins = []
+		var value_maxs = []
+
+		const formatInt = (num, prec = 2, ceil = true) => {
+			// formatInt(2345, 2, true)  -> 2400
+			// formatInt(2345, 2. false) -> 2300
+			// formatInt(2345, 3, true)  -> 3000
+			// formatInt(2345, 3, false) -> 2000
+			const len = String(num).length;
+			if (len < prec) { return num };
+
+			const mult = Math.pow(10, prec);
+			return ceil ?
+					Math.ceil(num / mult) * mult :
+					Math.floor(num / mult) * mult;
+		}
+
+
+		function parse_data(datasets){
+			// alert(datasets)
+			for (var i = 0; i < datasets.length; ++i){
+				var mins = []
+				var maxs = []
+				for (var j = 0; j< datasets[i].length; ++j){
+					mins.push(Math.min.apply(null, datasets[i][j]))
+					maxs.push(Math.max.apply(null, datasets[i][j]))
+				}
+				value_mins.push(Math.min.apply(null, mins))
+				value_maxs.push(Math.max.apply(null, maxs))
+			}
+		}
+
+		function parse_datasets(str_datasets){
+			result = []
+			for(var i = 0; i < str_datasets.length; ++i){
+				data1 = str_datasets[i]
+				data2 = data1.split(':')
+				ret1 = []
+				for(var j = 0; j < str_datasets.length; ++j) {
+					ret2 = []
+					data3 = data2[j]
+					data4 = data3.split(',')
+					for (var k = 0; k < data4.length; ++k) {
+						ret2.push(parseFloat(data4[k]));
+					}
+					ret1.push(ret2)
+				}
+				result.push(ret1)
+			}
+			return result;
+		}
+
+		var datasets = parse_datasets(str_datasets)
+		parse_data(datasets)
+		// alert(value_maxs)
+
+		function get_i_color(index) {
+			var color_index = index % all_color_names.length
+			var color_name = all_color_names[color_index]
+			var color = all_colors[color_name]
+			return color
+		}
+
+		function createDataSets(index){
+			var result = []
+			var data_set = datasets[index]
+			for (var index = 0; index < set_names.length; index ++){
+				var _set = {};
+				color = get_i_color(index)
+				_set.data = data_set[index]
+				_set.label = set_names[index]
+				_set.backgroundColor = color
+				_set.borderColor = color
+				_set.fill = false
+				_set.lineTension = 0
+				result.push(_set)
+			}
+			return  result;
+		}
+
+		function createConfig(func_name) {
+			var title = func_name
+			var index = func_names.indexOf(func_name)
+			var offset = 5
+			_min = 0
+			_max = 100
+			var step_size = 10
+			if (index != -1){
+				_min = Math.max(_min, value_mins[index] - offset)
+				_max = Math.min(_max, value_maxs[index] + offset)
+				step_size = Math.min(step_size, Math.max(0 , (_max - _min) / nodes.length))
+				step_size = Math.ceil(step_size)
+				step_size = formatInt(step_size, 1)
+				_min = Math.floor(_min)
+				_max = Math.floor(_max)
+			}
+			var _gridLines = {
+					display: true,
+					drawBorder: true,
+					drawOnChartArea: true,
+					drawTicks: true
+				}
+
+			return {
+				type: 'line',
+				data: {
+					labels: nodes,
+					// datasets: _datasets,
+				},
+				options: {
+					responsive: true,
+					title: {
+						display: true,
+						text: title
+					},
+					scales: {
+						xAxes: [{
+							gridLines: _gridLines
+						}],
+						yAxes: [{
+							gridLines: _gridLines,
+							ticks: {
+								min: _min,
+								max: _max,
+								stepSize: step_size
+							}
+						}]
+					}
+				}
+			};
+		}
+
+		window.onload = function() {
+			var container = document.querySelector('.container');
+			var func_cnt = func_names.length
+			for (var index = 0; index < func_cnt; index++){
+				var div = document.createElement('div');
+				div.classList.add('chart-container');
+
+				var canvas = document.createElement('canvas');
+				div.appendChild(canvas);
+				container.appendChild(div);
+
+				var ctx = canvas.getContext('2d');
+				var config = createConfig(func_names[index]);
+				var data_set = createDataSets(index)
+				config.data.datasets = data_set
+				new Chart(ctx, config);
+			}
+		};
+	</script>`
+</body>
+
+</html>

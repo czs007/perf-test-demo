@@ -9,9 +9,6 @@ LOG_DIRS = {
     'arctern': '/home/czs/performance/arctern_log/',
 }
 
-template_html = ''
-html_path = ''
-
 PREFIXES = [
         'geomesa', 
         'geospark', 
@@ -78,7 +75,8 @@ def extract_common_funcs_and_times(means_list):
         result[k] = pair
     return result
 
-def read_and_replace(data):
+
+def write_data(data):
     REP_DATA_NAMES = PREFIXES
     function_names = list(data.keys())
     data_sets = []
@@ -89,21 +87,22 @@ def read_and_replace(data):
             _data.append(str(data[name][i]))
         data_sets.append(",".join(_data))
 
+    from math import log, ceil
+    row_str = '10_' + str(ceil(log(ROWS, 10)))
+
     rep_data = {
-            'REP_DATA_NAMES' : PREFIXES,
-            'REP_DATASETS' : data_sets,
-            'REP_FUNC_NAMES' : function_names,
-        }
+        'ROWS': row_str,
+        'REP_SET_NAMES' : PREFIXES,
+        'REP_DATASETS' : data_sets,
+        'REP_FUNC_NAMES' : function_names,
+    }
 
-    with open (template_path, "r") as f:
-        lines = f.readlines()
-        all_string = "".join(lines)
-        for k, v in rep_data.items():
-            all_string = all_string.replace(k, str(v))
+    with open (data_path, "w") as f:
+        f.write(str(rep_data))
 
-    if all_string:
-        with open (html_path, "w") as f:
-            f.write(all_string)
+
+def print_help():
+    print('python perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -r <rows> -o <data_path>')
 
 if __name__ == "__main__":
 
@@ -112,14 +111,16 @@ if __name__ == "__main__":
 
 
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "-a:-b:-c:-r:-p:-t:-h",['geospark_dir','geomesa_dir','arctern_dir','rows','template_path','html_path','help'])
+        opts, args = getopt.getopt(sys.argv[1:], "-a:-b:-c:-r:-o:-h",['geospark_dir','geomesa_dir','arctern_dir','rows','data_path','help'])
     except getopt.GetoptError:
-        print('python perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -r <rows> -p <template_path> -t <html_path>')
+        print_help()
         sys.exit(2)
+
+    data_path = ""
 
     for opt, arg in opts:
         if opt == '-h':
-            print('perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -r <rows> -p <template_path> -t <html_path>')
+            print_help()
             sys.exit()
         elif opt in ("-a", "--geospark_dir"):
             LOG_DIRS['geospark'] = arg
@@ -129,13 +130,14 @@ if __name__ == "__main__":
             LOG_DIRS['arctern'] = arg
         elif opt in ("-r", "--rows"):
             ROWS = int(arg)
-        elif opt in ("-p", "--template_path"):
-            template_path = arg
-        elif opt in ("-t", "--html_path"):
-            html_path = arg
+        elif opt in ("-o", "--data_path"):
+            data_path = arg
+
+    if not data_path:
+        print_help()
+        sys.exit(0)
 
     mean_list = [] 
-
     from math import log, ceil
     sub_dir = '10_' + str(ceil(log(ROWS, 10))) + '/'
     for prefix in PREFIXES:
@@ -144,4 +146,5 @@ if __name__ == "__main__":
         mean_list.append(extract_perf_time(log_dir))
 
     res = extract_common_funcs_and_times(mean_list)
-    read_and_replace(res)
+    #read_and_replace(res)
+    write_data(res)
