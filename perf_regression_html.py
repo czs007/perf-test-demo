@@ -1,16 +1,9 @@
 import os
 import statistics
+import pprint
 
-ROWS = 10**6
 
-LOG_DIRS = {
-    'geospark': '/home/czs/performance/geospark_log/',
-    'geomesa': '/home/czs/performance/geomesa_log/',
-    'arctern': '/home/czs/performance/arctern_log/',
-}
-
-template_html = ''
-html_path = ''
+arctern_path = '/home/czs/scale_report'
 
 PREFIXES = [
         'geomesa', 
@@ -18,11 +11,6 @@ PREFIXES = [
         'arctern'
         ]
 
-COLORS = [
-        (0.2, 0.4, 0.6, 0.6),
-        (0.2, 0.4, 0.5, 0.5),
-        (0.2, 0.4, 0.4, 0.4)
-]
 
 def fetch_log_files(log_dir):
     log_files = []
@@ -39,7 +27,8 @@ def fetch_func_perf(log_dir, files):
     append_order_arr = []
     for log_file in files:
         tmp_arr = []
-        with open(log_dir + log_file, 'r') as f:
+        full_path = os.path.join(log_dir, log_file)
+        with open(full_path, 'r') as f:
             for line in f:
                 line = list(map(lambda x: x.upper(), re.split('[: ]',line.strip())))
                 keys = [(k + "_" + log_file[0:-4] + '_time').upper() for k in PREFIXES]
@@ -51,8 +40,21 @@ def fetch_func_perf(log_dir, files):
     return res, append_order_arr
 
 
-def extract_perf_time(log_dir):
-    res_set, func_order = fetch_func_perf(*fetch_log_files(log_dir))
+def extract_all_perf_time(data_path):
+    data = {}
+    node_nums = [d for d in os.listdir(data_path) if os.path.isdir(os.path.join(data_path, d))]
+    for num in node_nums:
+        _data_path = os.path.join(data_path, num)
+        subdirs = [d for d in os.listdir(_data_path) if os.path.isdir(os.path.join(_data_path, d))]
+        _data = {}
+        for sub in subdirs:
+            _data[sub] = extract_perf_time(os.path.join(_data_path, sub))
+        data[num] = _data
+
+    return data
+
+def extract_perf_time(data_path):
+    res_set, func_order = fetch_func_perf(*fetch_log_files(data_path))
     func_order = [x.lower() for x in func_order if isinstance(x, str)]
 
     assert len(func_order) == len(res_set)
@@ -60,92 +62,89 @@ def extract_perf_time(log_dir):
     for i in range(len(func_order)):
         func_name = func_order[i]
         nums = res_set[i][1:]
-        mean = statistics.mean(nums)
+        mean = 0
+        if nums:
+            mean = statistics.mean(nums)
         result[func_name] = mean
 
     return result
 
-def extract_common_funcs_and_times(means_list):
-    keys_list = [set(d) for d in means_list]
-    keys = set.intersection(*keys_list)
-    result = {}
-    cnt = len(means_list)
-    for k in keys:
-        pair = []
-        for i in range(cnt):
-            data = means_list[i]
-            pair.append(data[k])
-        result[k] = pair
-    return result
+def write_data(data, output_path):
 
-def read_and_replace(data):
-    REP_DATA_NAMES = PREFIXES
-    function_names = list(data.keys())
+    # "scale": ('REP_NODES', 'REP_SET_NAMES', 'REP_DATASETS', 'REP_FUNC_NAMES'),
+    rep_data = {}
+    data_keys = list(set(data.keys()))
+    data_keys.sort()
+
+    all_set_names = set()
+    all_func_names = set()
+    for k in data_keys:
+        set_names = set(data[k].keys())
+        all_set_names |= set_names
+        for set_name in set_names:
+            all_func_names |= set(data[k][set_name])
+
+    # REP_NODES
+    all_func_names = list(all_func_names)
+    all_func_names.sort()
+    all_set_names = list(all_set_names)
+    all_set_names.sort()
+
     data_sets = []
-
-    for i, data_name in enumerate(REP_DATA_NAMES):
-        _data = []
-        for name in function_names:
-            _data.append(str(data[name][i]))
-        data_sets.append(",".join(_data))
-
-    from math import log, ceil
-    row_str = '10_' + str(ceil(log(ROWS, 10)))
+    for func_name in all_func_names:
+        set_data = []
+        for set_name in all_set_names:
+            node_data = []
+            for node_num in data_keys:
+                value = data.get(node_num, {}).get(set_name, {}).get(func_name, 0)
+                node_data.append(str(value))
+            set_data.append(','.join(node_data))
+        data_sets.append(':'.join(set_data))
 
     rep_data = {
-            'ROWS': row_str,
-            'REP_DATA_NAMES' : PREFIXES,
-            'REP_DATASETS' : data_sets,
-            'REP_FUNC_NAMES' : function_names,
-        }
+        'REP_NODES': data_keys,
+        'REP_SET_NAMES' : all_set_names,
+        'REP_DATASETS' : data_sets,
+        'REP_FUNC_NAMES' : all_func_names,
+    }
 
-    with open (template_path, "r") as f:
-        lines = f.readlines()
-        all_string = "".join(lines)
-        for k, v in rep_data.items():
-            all_string = all_string.replace(k, str(v))
+    with open (output_path, "w") as f:
+        f.write(str(rep_data))
 
-    if all_string:
-        with open (html_path, "w") as f:
-            f.write(all_string)
+def print_help():
+    print('python perf_analyze.py  -d <data_path> -o <output_path>')
 
 if __name__ == "__main__":
 
     import sys
     import getopt
 
-
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "-a:-b:-c:-r:-p:-t:-h",['geospark_dir','geomesa_dir','arctern_dir','rows','template_path','html_path','help'])
+        opts, args = getopt.getopt(sys.argv[1:], "-d:-o:-h",['data_path','output_path','help'])
     except getopt.GetoptError:
-        print('python perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -r <rows> -p <template_path> -t <html_path>')
+        print_help()
         sys.exit(2)
+
+    data_path = ""
+    output_path = "./hehe"
 
     for opt, arg in opts:
         if opt == '-h':
-            print('perf_analyze.py -a <geospark_dir> -b <geomesa_dir> -c <arctern_dir> -r <rows> -p <template_path> -t <html_path>')
+            print_help()
             sys.exit()
-        elif opt in ("-a", "--geospark_dir"):
-            LOG_DIRS['geospark'] = arg
-        elif opt in ("-b", "--geomesa_dir"):
-            LOG_DIRS['geomesa'] = arg
-        elif opt in ("-c", "--arctern_dir"):
-            LOG_DIRS['arctern'] = arg
-        elif opt in ("-r", "--rows"):
-            ROWS = int(arg)
-        elif opt in ("-p", "--template_path"):
-            template_path = arg
-        elif opt in ("-t", "--html_path"):
-            html_path = arg
+        elif opt in ("-d", "--data_path"):
+            data_path = arg
+        elif opt in ("-o", "--output_path"):
+            output_path = arg
 
-    mean_list = [] 
+    data_path = arctern_path
+    if "" in (data_path, output_path):
+        print_help()
+        sys.exit()
 
-    from math import log, ceil
-    sub_dir = '10_' + str(ceil(log(ROWS, 10))) + '/'
-    for prefix in PREFIXES:
-        log_dir = LOG_DIRS[prefix]
-        log_dir += sub_dir
-        mean_list.append(extract_perf_time(log_dir))
+    if not os.path.exists(data_path):
+        print_help()
+        sys.exit()
 
-    res = extract_common_funcs_and_times(mean_list)
-    read_and_replace(res)
+    data = extract_all_perf_time(data_path)
+    write_data(data, output_path)

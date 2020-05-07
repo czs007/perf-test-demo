@@ -59,6 +59,15 @@
 					legend: {
 						position: 'top',
 					},
+					scales: {
+                    	yAxes: [{
+                    		ticks: {
+                    			callback: function (value, index, values) {
+                    				return value + 's';
+                    			}
+                    		}
+                    	}],
+                    },
 					title: {
 						display: true,
 						text: 'GIS Functions Performance with dataset(ROWS)'
